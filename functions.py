@@ -27,14 +27,14 @@ import warnings
 import time
 warnings.filterwarnings('ignore')
 
-def vanilla_models(X,y,test_size=.3):
+def vanilla_models(X_train,X_test,y_train,y_test):
     """ This function takes in predictors, a target variable and an optional test
     size parameter and returns results for 9 baseline classifiers"""
     
     names = ["Logistic Regression","Nearest Neighbors","Naive Bayes", "Linear SVM", "RBF SVM","Decision Tree",
              "Random Forest", "Gradient Boost", "AdaBoost","XGBoost"]
     
-    req_scaling = ["Nearest Neighbors"]
+    req_scaling = ["Nearest Neighbors", "Linear SVM", "RBF SVM"]
 
     classifiers = [
         LogisticRegression(),
@@ -56,12 +56,12 @@ def vanilla_models(X,y,test_size=.3):
                                  'test time'])
     
     #train test splitsies
-    X_train,X_test,y_train,y_test = train_test_split(X,y,test_size = .3,random_state=42)
+    #bring data in split
     
     #iterate over classifiers
     for count,clf in enumerate(classifiers):
         start = time.time()
-        scaler = StandardScaler()
+        scaler = StandardScaler(with_mean=False)
         if names[count] in req_scaling:
             X_train_scaled = scaler.fit_transform(X_train)
             X_test_scaled  = scaler.transform(X_test)
@@ -69,9 +69,9 @@ def vanilla_models(X,y,test_size=.3):
         else:
             X_train_scaled = X_train
             X_test_scaled = X_test
-        clf.fit(X_train_scaled,y_train)
-        train_preds = clf.predict(X_train_scaled)
-        test_preds = clf.predict(X_test_scaled)
+        clf.fit(X_train_scaled.toarray(),y_train)
+        train_preds = clf.predict(X_train_scaled.toarray())
+        test_preds = clf.predict(X_test_scaled.toarray())
         
         #training stats
         train_recall = round(recall_score(y_train,train_preds,average = 'weighted'),3)
@@ -96,18 +96,16 @@ def vanilla_models(X,y,test_size=.3):
                         'test f1 score':f1,'test time':elapsed},ignore_index=True)
     return df
 
-def run_model(clf,X,y):
+def run_model(clf,X_train,X_test,y_train,y_test):
     #train test splitsies
     """takes in an instantiated classifier and the predictive and target data. 
     use only for models on that do not require data scaling"""
     
     start = time.time()
-    X_train,X_test,y_train,y_test = train_test_split(X,y,test_size=.3,random_state=42)
-    X_train, y_train = SMOTE().fit_resample(X_train,y_train)
     clf.fit(X_train,y_train)
     train_preds = clf.predict(X_train)
     test_preds = clf.predict(X_test)
-    model_report = classification_report(y_test, test_preds,target_names = labels.keys(),output_dict = True)
+   
 
     #training stats
     train_recall = round(recall_score(y_train,train_preds,average = 'weighted'),3)
